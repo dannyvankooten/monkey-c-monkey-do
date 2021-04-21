@@ -1,3 +1,7 @@
+**Development of this interpreter continues here: [dannyvankooten/pepper-lang](https://github.com/dannyvankooten/pepper-lang)**
+
+---
+
 ## C implementation of the Monkey programming language.
 
 <img src="https://monkeylang.org/images/logo.png" width="120" height="120" align="right" />
