@@ -46,6 +46,7 @@ void print_version() {
 
 static 
 int repl() {
+	printf("Size of object: %.3lu", sizeof(OBJ_INT));
 	print_version();
 	printf("press CTRL+c to exit\n\n");
 	struct program *program;

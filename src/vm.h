@@ -6,8 +6,8 @@
 #include "object.h"
 
 #define FRAMES_SIZE 64
-#define GLOBALS_SIZE 32
-#define STACK_SIZE 256
+#define GLOBALS_SIZE 512
+#define STACK_SIZE 512
 
 enum result {
     VM_SUCCESS = 0,
