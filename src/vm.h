@@ -5,9 +5,7 @@
 #include "opcode.h"
 #include "object.h"
 
-#define FRAMES_SIZE 64
-#define GLOBALS_SIZE 512
-#define STACK_SIZE 512
+#define FRAMES_SIZE 256
 
 enum result {
     VM_SUCCESS = 0,
@@ -23,22 +21,23 @@ enum result {
 struct frame {
     uint8_t *ip;
     struct compiled_function* fn;
-    uint32_t base_pointer;    
+    uint_fast32_t base_pointer;    
 };
 
 struct vm {
-    uint32_t stack_pointer;
-    uint32_t frame_index;
-    uint32_t nconstants;
-    struct object stack[STACK_SIZE];
-    struct object constants[GLOBALS_SIZE];
+    uint_fast32_t stack_pointer;
+    uint_fast32_t frame_index;
+    uint_fast32_t nconstants;
+    
     struct frame frames[FRAMES_SIZE];
-    struct object globals[GLOBALS_SIZE];
+    struct object_list *constants;
+    struct object_list *globals;
+    struct object_list *stack;
     struct object_list *heap;
 };
 
 struct vm *vm_new(struct bytecode *bc);
-struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[STACK_SIZE]);
+struct vm *vm_new_with_globals(struct bytecode *bc, struct object_list *globals);
 enum result vm_run(struct vm *vm);
 struct object vm_stack_last_popped(struct vm *vm);
 void vm_free(struct vm *vm);

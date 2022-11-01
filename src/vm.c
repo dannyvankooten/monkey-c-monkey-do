@@ -11,10 +11,10 @@
 #include "builtins.h"
 
 #define vm_current_frame(vm) (vm->frames[vm->frame_index])
-#define vm_stack_pop_ignore(vm) (vm->stack_pointer--)
-#define vm_stack_pop(vm) (vm->stack[--vm->stack_pointer])
-#define vm_stack_cur(vm) (vm->stack[vm->stack_pointer - 1])
-#define vm_stack_push(vm, obj) (vm->stack[vm->stack_pointer++] = obj)
+#define vm_stack_pop_ignore(vm) vm->stack_pointer -= 1;
+#define vm_stack_pop(vm) (vm->stack->values[--vm->stack_pointer])
+#define vm_stack_cur(vm) (vm->stack->values[vm->stack_pointer - 1])
+#define vm_stack_push(vm, obj) vm->stack = insert_in_object_list(vm->stack, vm->stack_pointer++, obj);
 
 #ifndef DEBUG 
     #define DISPATCH() goto *dispatch_table[*frame->ip];        
@@ -31,7 +31,7 @@ print_debug_info(struct vm *vm) {
 
     int ip_now = frame->ip - frame->fn->instructions.bytes;
     int ip_end = frame->fn->instructions.size - 1;
-    printf("\n\nFrame: %2d | IP: %3d/%d | opcode: %12s | operand: ", vm->frame_index, ip_now, ip_end, opcode_to_str(*frame->ip));
+    printf("\n\nFrame: %2ld | IP: %3d/%d | opcode: %12s | operand: ", vm->frame_index, ip_now, ip_end, opcode_to_str(*frame->ip));
     struct definition def = lookup(*frame->ip);
     if (def.operands > 0) {
         if (def.operand_widths[0] > 1) {
@@ -45,27 +45,27 @@ print_debug_info(struct vm *vm) {
     }
 
     printf("Constants: \n");
-    for (int i = 0; i < vm->nconstants; i++) {
+    for (int i = 0; i < vm->constants->size; i++) {
         str[0] = '\0';
-        object_to_str(str, vm->constants[i]);
-        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->constants[i].type), str);
+        object_to_str(str, vm->constants->values[i]);
+        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->constants->values[i].type), str);
     }
 
     printf("Globals: \n");
-    for (int i = 0; i < GLOBALS_SIZE; i++) {
-        if (vm->globals[i].type == OBJ_NULL) {
+    for (int i = 0; i < vm->globals->size; i++) {
+        if (vm->globals->values[i].type == OBJ_NULL) {
             break;
         }
         str[0] = '\0';
-        object_to_str(str, vm->globals[i]);
-        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->globals[i].type), str);
+        object_to_str(str, vm->globals->values[i]);
+        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->globals->values[i].type), str);
     }
 
     printf("Stack: \n");
     for (int i=0; i < vm->stack_pointer; i++) {
         str[0] = '\0';
-        object_to_str(str, vm->stack[i]);
-        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->stack[i].type), str);
+        object_to_str(str, vm->stack->values[i]);
+        printf("  %3d: %s = %s\n", i, object_type_to_str(vm->stack->values[i].type), str);
     }
 }
 #endif 
@@ -79,21 +79,11 @@ struct vm *vm_new(struct bytecode *bc) {
     vm->stack_pointer = 0;
     vm->frame_index = 0;
 
-    // initialize globals as null objects for print_debug_info()
-    for (int32_t i=0; i < GLOBALS_SIZE; i++) {
-        vm->globals[i].type = OBJ_NULL;
-    }
-
-    // copy over constants from compiled bytecode
-    vm->nconstants = 0;
-    for (int32_t i=0; i < bc->constants->size; i++) {
-       vm->constants[vm->nconstants++] = bc->constants->values[i];
-    }    
-
-    _builtin_args_list = make_object_list(32);
-
-    // initialize heap
-    vm->heap = make_object_list(256);
+    _builtin_args_list = make_object_list(16);
+    vm->stack = make_object_list(64);
+    vm->globals = make_object_list(64);
+    vm->constants = copy_object_list(bc->constants);
+    vm->heap = make_object_list(64);
 
     // copy instruction as we are not adding this compiled function to a constant list
     // the bytes are freed through the bytecode object
@@ -110,12 +100,12 @@ struct vm *vm_new(struct bytecode *bc) {
     return vm;
 }
 
-struct vm *vm_new_with_globals(struct bytecode *bc, struct object globals[GLOBALS_SIZE]) {
+struct vm *vm_new_with_globals(struct bytecode *bc, struct object_list *globals) {
     struct vm *vm = vm_new(bc);
 
-    for (int32_t i=0; i < GLOBALS_SIZE; i++) {
-        vm->globals[i] = globals[i];
-    }
+    free_object_list(vm->globals);
+    vm->globals = globals;
+
     return vm;
 }
 
@@ -134,7 +124,7 @@ void vm_free(struct vm *vm) {
 }
 
 
-static void 
+static void inline 
 vm_do_binary_integer_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {    
     switch (opcode) {
         case OPCODE_ADD: 
@@ -170,7 +160,7 @@ vm_do_binary_string_operation(struct vm* restrict vm, const enum opcode opcode, 
     gc(vm);
 }
 
-static void 
+static void inline
 vm_do_binary_boolean_operation(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {    
     switch (opcode) {
         case OPCODE_AND: 
@@ -185,7 +175,7 @@ vm_do_binary_boolean_operation(const struct vm* restrict vm, const enum opcode o
     }
 }
 
-static void 
+static void inline 
 vm_do_binary_operation(struct vm* restrict vm, const enum opcode opcode) {
     const struct object* right = &vm_stack_pop(vm);
     struct object* left = &vm_stack_cur(vm);
@@ -207,7 +197,7 @@ vm_do_binary_operation(struct vm* restrict vm, const enum opcode opcode) {
     }
 }
 
-static void 
+static void inline 
 vm_do_integer_comparison(const struct vm* restrict vm, const enum opcode opcode, struct object* restrict left, const struct object* restrict right) {   
     switch (opcode) {
          case OPCODE_EQUAL: 
@@ -259,7 +249,7 @@ vm_do_bool_comparison(const struct vm* restrict vm, const enum opcode opcode, st
     }    
 }
 
-static void 
+static void inline 
 vm_do_comparision(struct vm* restrict vm, const enum opcode opcode) {
     const struct object* right = &vm_stack_pop(vm);
     struct object* left = &vm_stack_cur(vm);
@@ -300,7 +290,7 @@ vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct objec
     struct object_list *args = _builtin_args_list;
     
     for (uint32_t i = vm->stack_pointer - num_args; i < vm->stack_pointer; i++) {
-        args->values[args->size++] = vm->stack[i];
+        args->values[args->size++] = vm->stack->values[i];
     }  
 
     struct object obj = builtin(args);
@@ -319,7 +309,7 @@ vm_do_call_builtin(struct vm* restrict vm, struct object (*builtin)(struct objec
 }
 
 /* handle call to user-defined function */
-static void 
+static void inline 
 vm_do_call_function(struct vm* restrict vm, struct compiled_function* restrict f, const uint8_t num_args) {
     /* TODO: Validate number of arguments */
     struct frame* frame = &vm->frames[++vm->frame_index];
@@ -329,9 +319,9 @@ vm_do_call_function(struct vm* restrict vm, struct compiled_function* restrict f
     vm->stack_pointer = frame->base_pointer + f->num_locals; 
 }
 
-static void
+static void inline 
 vm_do_call(struct vm* restrict vm, const uint8_t num_args) {
-    const struct object callee = vm->stack[vm->stack_pointer - 1 - num_args];
+    const struct object callee = vm->stack->values[vm->stack_pointer - 1 - num_args];
     switch (callee.type) {
         case OBJ_COMPILED_FUNCTION:
             return vm_do_call_function(vm, callee.value.ptr->value, num_args);
@@ -351,7 +341,7 @@ struct object
 vm_build_array(struct vm* restrict vm, const uint16_t start_index, const uint16_t end_index) {
     struct object_list *list = make_object_list(end_index - start_index);
     for (int32_t i = start_index; i < end_index; i++) {
-        list->values[list->size++] = copy_object(&vm->stack[i]);
+        list->values[list->size++] = copy_object(&vm->stack->values[i]);
     }
     struct object o = make_array_object(list);
 
@@ -378,22 +368,22 @@ gc(struct vm* restrict vm)
 
     // traverse VM constants, stack and globals and mark every object that is reachable
     for (uint32_t i=0; i < vm->stack_pointer; i++) {
-        if (vm->stack[i].type <= OBJ_INT) { 
+        if (vm->stack->values[i].type <= OBJ_INT) { 
             continue;
         }
-        vm->stack[i].value.ptr->marked = true;
+        vm->stack->values[i].value.ptr->marked = true;
     }
     for (uint32_t i=0; i < vm->nconstants; i++) {
-        if (vm->constants[i].type <= OBJ_INT) { 
+        if (vm->constants->values[i].type <= OBJ_INT) { 
             continue;
         }
-        vm->constants[i].value.ptr->marked = true;
+        vm->constants->values[i].value.ptr->marked = true;
     }
-    for (uint32_t i=0; i < GLOBALS_SIZE && vm->globals[i].type != OBJ_NULL; i++) {
-        if (vm->globals[i].type <= OBJ_INT) { 
+    for (uint32_t i=0; i < vm->globals->size && vm->globals->values[i].type != OBJ_NULL; i++) {
+        if (vm->globals->values[i].type <= OBJ_INT) { 
             continue;
         }
-        vm->globals[i].value.ptr->marked = true;
+        vm->globals->values[i].value.ptr->marked = true;
     }
 
     // traverse all objects, free all unmarked objects
@@ -421,7 +411,7 @@ gc(struct vm* restrict vm)
 enum result 
 vm_run(struct vm* restrict vm) {
     /* 
-    The following comment is taken from CPython's source: https://github.com/python/cpython/blob/master/Python/ceval.c#L775
+    The following comment is taken from CPython's source: https://github.com/python/cpython/blob/3.11/Python/ceval.c#L1243
 
     Computed GOTOs, or
        the-optimization-commonly-but-improperly-known-as-"threaded code"
@@ -511,7 +501,7 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_CONST: {
         uint16_t idx = read_uint16((frame->ip + 1));
         frame->ip += 3;
-        vm_stack_push(vm, vm->constants[idx]); 
+        vm_stack_push(vm, vm->constants->values[idx]); 
         DISPATCH();
     }
 
@@ -537,7 +527,6 @@ vm_run(struct vm* restrict vm) {
     }
 
     GOTO_OPCODE_JUMP_NOT_TRUE: {
-        // struct object condition = vm_stack_pop(vm);
         struct object *condition = &vm_stack_pop(vm);
         if (condition->type == OBJ_NULL || (condition->type == OBJ_BOOL && condition->value.boolean == false)) {
             uint16_t pos = read_uint16((frame->ip + 1));
@@ -551,14 +540,14 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_SET_GLOBAL: {
         uint16_t idx = read_uint16((frame->ip + 1));
         frame->ip += 3;
-        vm->globals[idx] = vm_stack_pop(vm);
+        vm->globals = insert_in_object_list(vm->globals, idx, vm_stack_pop(vm)); 
         DISPATCH();
     }
 
     GOTO_OPCODE_GET_GLOBAL: {
         uint16_t idx = read_uint16((frame->ip + 1));
         frame->ip += 3;
-        vm_stack_push(vm, vm->globals[idx]);
+        vm_stack_push(vm, vm->globals->values[idx]);
         DISPATCH();
     }
 
@@ -574,7 +563,7 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_RETURN: {
         vm->stack_pointer = frame->base_pointer - 1;
         frame = &vm->frames[--vm->frame_index];
-        vm->stack[vm->stack_pointer++].type = OBJ_NULL;
+        vm->stack->values[vm->stack_pointer++].type = OBJ_NULL;
         frame->ip++; 
         DISPATCH();
     }
@@ -582,14 +571,14 @@ vm_run(struct vm* restrict vm) {
     GOTO_OPCODE_SET_LOCAL: {
         uint8_t idx = read_uint8((frame->ip + 1));
         frame->ip += 2;
-        vm->stack[frame->base_pointer + idx] = vm_stack_pop(vm);
+        vm->stack->values[frame->base_pointer + idx] = vm_stack_pop(vm);
         DISPATCH();
     }
 
     GOTO_OPCODE_GET_LOCAL: {
         uint8_t idx = read_uint8((frame->ip + 1));
         frame->ip += 2;
-        vm_stack_push(vm, vm->stack[frame->base_pointer + idx]);
+        vm_stack_push(vm, vm->stack->values[frame->base_pointer + idx]);
         DISPATCH();
     }
 
@@ -627,23 +616,23 @@ vm_run(struct vm* restrict vm) {
     }
 
     GOTO_OPCODE_TRUE: {
-        vm->stack[vm->stack_pointer].type = OBJ_BOOL;
-        vm->stack[vm->stack_pointer].value.boolean = true;
+        vm->stack->values[vm->stack_pointer].type = OBJ_BOOL;
+        vm->stack->values[vm->stack_pointer].value.boolean = true;
         vm->stack_pointer++;
         frame->ip++;
         DISPATCH();
     }
 
     GOTO_OPCODE_FALSE: {
-        vm->stack[vm->stack_pointer].type = OBJ_BOOL;
-        vm->stack[vm->stack_pointer].value.boolean = false;
+        vm->stack->values[vm->stack_pointer].type = OBJ_BOOL;
+        vm->stack->values[vm->stack_pointer].value.boolean = false;
         vm->stack_pointer++;
         frame->ip++;
         DISPATCH();
     }
 
     GOTO_OPCODE_NULL: {
-        vm->stack[vm->stack_pointer++].type = OBJ_NULL;
+        vm->stack->values[vm->stack_pointer++].type = OBJ_NULL;
         frame->ip++;
         DISPATCH();
     }
@@ -732,6 +721,7 @@ vm_run(struct vm* restrict vm) {
     return VM_SUCCESS;
 }
 
-struct object vm_stack_last_popped(struct vm *vm) {
-    return vm->stack[vm->stack_pointer];
+inline  
+struct object vm_stack_last_popped(struct vm *restrict vm) {
+    return vm->stack->values[vm->stack_pointer];
 }

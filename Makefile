@@ -1,4 +1,4 @@
-CFLAGS+= -Werror -Wall -Isrc/ -g 
+CFLAGS+= -Werror -Wall -Isrc/ -g
 VPATH= src
 LEXER_SRC= lexer.c
 PARSER_SRC= parser.c $(LEXER_SRC)

@@ -52,7 +52,7 @@ int repl() {
 	struct program *program;
 	struct symbol_table *symbol_table = symbol_table_new();
 	struct object_list *constants = make_object_list(64);
-	struct object globals[GLOBALS_SIZE];
+	struct object_list *globals = make_object_list(64);
 	char input[BUFSIZ] = { '\0' };
 	char output[BUFSIZ] = { '\0' };
 	while (1)
@@ -65,7 +65,7 @@ int repl() {
 		struct lexer lexer = new_lexer(input);
 		struct parser parser = new_parser(&lexer);
 		program = parse_program(&parser);
-
+	
 		if (parser.errors > 0) {
 			printf("Whoops! Parsing error:\n");
 			for (int i = 0; i < parser.errors; i++) {
@@ -100,14 +100,14 @@ int repl() {
 		// clear output buffer
 		output[0] = '\0';
 
-		// copy globals out of VM so we can re-use them in next iteration
-		for (int32_t i=0; i < GLOBALS_SIZE; i++) {
-			globals[i] = machine->globals[i];
-		}
+		// move globals out of VM so we can re-use them in next iteration
+		globals = machine->globals;
 
 		//free_program(program);
 		//compiler_free(compiler);
 		//vm_free(machine);
+		free_object_list(machine->constants);
+		free_object_list(machine->stack);
 		free(code);
 	}
 
@@ -128,6 +128,7 @@ int run_script(const char *filename) {
 
 		exit(1);
 	}
+
 
 	struct compiler *compiler = compiler_new();
 	int err = compile_program(compiler, program);

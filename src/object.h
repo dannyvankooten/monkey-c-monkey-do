@@ -71,4 +71,5 @@ void object_to_str(char *str, struct object obj);
 struct object_list *make_object_list(uint32_t cap);
 struct object_list *append_to_object_list(struct object_list* list, struct object obj);
 struct object_list *copy_object_list(const struct object_list *original);
+struct object_list*insert_in_object_list(struct object_list* list, size_t index, struct object obj);
 void free_object_list(struct object_list *list);

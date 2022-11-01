@@ -177,6 +177,10 @@ struct object_list *make_object_list(uint32_t cap) {
     list->cap = cap;
     list->size = 0;
     list->values = (struct object*) (list + 1);
+
+    for(uint32_t i=0; i < list->cap; i++) {
+        list->values[i] = (struct object) { .type = OBJ_NULL };
+    }
     return list;
 }
 
@@ -188,11 +192,27 @@ void free_object_list(struct object_list *list) {
     free(list);
 }
 
-struct object_list*
-append_to_object_list(struct object_list* list, struct object obj) {
+inline struct object_list*
+insert_in_object_list(struct object_list* restrict list, size_t index, struct object obj) {
+    if (index >= list->cap) {
+        list->cap = list->cap > 0 ? list->cap * 2 : 1;
+        list = (struct object_list*) realloc(list, sizeof(struct object_list) + list->cap * sizeof(struct object));
+        assert(list != NULL);
+        list->values = (struct object*) (list + 1);
+    }
+
+    list->values[index] = obj;
+
+    // return (possibly modified) pointer
+    return list;
+}
+
+inline struct object_list*
+append_to_object_list(struct object_list* restrict list, struct object obj) {
     if (list->size == list->cap) {
         list->cap = list->cap > 0 ? list->cap * 2 : 1;
         list = (struct object_list*) realloc(list, sizeof(struct object_list) + list->cap * sizeof(struct object));
+        assert(list != NULL);
         list->values = (struct object*) (list + 1);
     }
 
