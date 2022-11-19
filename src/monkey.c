@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "eval/eval.h"
 
 char *read_file(char *filename);
@@ -34,15 +35,17 @@ int main(int argc, char *argv[]) {
 
     free_program(program);
     free_environment(env);
+    free(input);
 }
 
 char *read_file(char *filename) {
-    char *input = malloc(1024);
+    char *input = malloc( 1024 * sizeof(char));
+    memset(input, '\0', 1024);
     unsigned int size = 0;
 
     FILE *f = fopen(filename, "r");
     unsigned int read = 0;
-    while ( (read = fread(input, 512, 1024, f)) > 0) {
+    while ( (read = fread(input, 1024, 1, f)) > 0) {
         size += read;
         input = realloc(input, size + 1024);
     }

@@ -238,6 +238,7 @@ struct object_list *make_object_list(unsigned int cap) {
         object_list_pool_head = list->next;
         list->next = NULL;
    }
+   list->size = 0;
 
    return list;
 }

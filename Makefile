@@ -1,4 +1,4 @@
-CFLAGS += -std=c11 -Wall -Isrc/
+CFLAGS += -std=c11 -Wall -Isrc/ -DDEBUG -g
 TESTFLAGS = $(CFLAGS) -g -DDEBUG
 BINDIR := bin
 DATE=$(shell date '+%Y-%m-%d')
@@ -8,8 +8,8 @@ all: monkey repl tests
 repl: $(BINDIR)
 	$(CC) $(CFLAGS) src/repl.c src/eval/*.c src/lexer/*.c src/parser/*.c -ledit -o $(BINDIR)/repl
 
-monkey: $(BINDIR)
-	$(CC) $(CFLAGS) src/monkey.c src/eval/*.c src/lexer/*.c src/parser/*.c -Ofast -finline-limit=1024 -DNDEBUG -o $(BINDIR)/monkey 
+monkey: 
+	$(CC) $(CFLAGS) src/monkey.c src/eval/*.c src/lexer/*.c src/parser/*.c -Ofast -march=native -DNDEBUG -o $(BINDIR)/monkey 
 
 tests: $(BINDIR) lexer_test parser_test eval_test code_test
 

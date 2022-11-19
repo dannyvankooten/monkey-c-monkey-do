@@ -136,7 +136,7 @@ struct expression {
         struct index_expression index;
         struct while_expression whilst;
     };
-} expression;
+};
 
 struct program {
     struct statement *statements;
