@@ -12,8 +12,8 @@
 #include "./env.h"
 #include "./../parser/parser.h"
 
-struct object *eval_expression(struct expression *expr, struct environment *env);
-struct object *eval_block_statement(struct block_statement *block, struct environment *env);
+static inline struct object *eval_expression(struct expression *expr, struct environment *env);
+static inline struct object *eval_block_statement(struct block_statement *block, struct environment *env);
 
 struct object *eval_bang_operator_expression(struct object *obj)
 {
@@ -54,7 +54,7 @@ struct object *eval_prefix_expression(enum operator operator, struct object *rig
 }
 
 
-struct object *eval_integer_infix_expression(enum operator operator, struct object *left, struct object *right)
+static inline struct object *eval_integer_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
     switch (operator)
     {
@@ -103,7 +103,7 @@ struct object *eval_string_infix_expression(enum operator operator, struct objec
 }
 
 
-struct object *eval_infix_expression(enum operator operator, struct object *left, struct object *right)
+static inline struct object *eval_infix_expression(enum operator operator, struct object *left, struct object *right)
 {
     if (left->type != right->type) 
     {
@@ -135,7 +135,7 @@ struct object *eval_infix_expression(enum operator operator, struct object *left
 }
 
 
-struct object *eval_if_expression(struct if_expression *expr, struct environment *env)
+static inline struct object *eval_if_expression(struct if_expression *expr, struct environment *env)
 {
     struct object *obj = eval_expression(expr->condition, env);
     if (is_object_error(obj->type)) {
@@ -186,7 +186,7 @@ struct object *eval_while_expression(struct while_expression *expr, struct envir
 }
 
 
-struct object *eval_identifier(struct identifier *ident, struct environment *env) {
+static inline struct object *eval_identifier(struct identifier *ident, struct environment *env) {
     struct object *obj = environment_get(env, ident->value);
     if (obj) {
         return obj;
@@ -201,7 +201,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 }
 
 
-struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
+static inline struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
     struct object_list *result = make_object_list(list->size);
     
     for (unsigned int i = 0; i < list->size; i++) {
@@ -228,7 +228,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
 }
 
 
-struct object *apply_function(struct object *obj, struct object_list *args) {
+static inline struct object *apply_function(struct object *obj, struct object_list *args) {
 
     switch (obj->type) {
         case OBJ_BUILTIN: {
@@ -272,7 +272,7 @@ struct object *eval_index_expression(struct object *left, struct object *index) 
     return copy_object(left->value.array->values[index->value.integer]);
 }
 
-struct object *eval_expression(struct expression *expr, struct environment *env)
+static inline struct object *eval_expression(struct expression *expr, struct environment *env)
 {
     switch (expr->type)
     {
@@ -378,7 +378,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
 }
 
 
-struct object *make_return_object(struct object *obj)
+static inline struct object *make_return_object(struct object *obj)
 {
     switch (obj->type)
     {
@@ -410,7 +410,7 @@ struct object *make_return_object(struct object *obj)
 }
 
 
-struct object *eval_statement(struct statement *stmt, struct environment *env)
+static inline struct object *eval_statement(struct statement *stmt, struct environment *env)
 {
     switch (stmt->type)
     {
@@ -435,7 +435,7 @@ struct object *eval_statement(struct statement *stmt, struct environment *env)
 }
 
 
-struct object *eval_block_statement(struct block_statement *block, struct environment *env)
+static inline struct object *eval_block_statement(struct block_statement *block, struct environment *env)
 {
     struct object *obj = NULL;
     int size = block->size;

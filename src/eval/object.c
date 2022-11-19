@@ -64,7 +64,7 @@ const char *object_type_to_str(enum object_type t)
 }
 
 
-struct object *make_object(enum object_type type) {
+static inline struct object *make_object(enum object_type type) {
    struct object *obj = object_pool_head;
 
    if (!obj) {
@@ -84,7 +84,7 @@ struct object *make_object(enum object_type type) {
    return obj;
 }
 
-struct object *make_integer_object(long value)
+inline struct object *make_integer_object(long value)
 {
     struct object *obj = make_object(OBJ_INT);
     obj->value.integer = value;
@@ -138,7 +138,7 @@ struct object *make_error_object(char *format, ...) {
 }
 
 
-struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
+inline struct object *make_function_object(struct identifier_list *parameters, struct block_statement *body, struct environment *env) {
     struct object *obj = make_object(OBJ_FUNCTION);
     obj->value.function.parameters = parameters;
     obj->value.function.body = body;
@@ -147,7 +147,7 @@ struct object *make_function_object(struct identifier_list *parameters, struct b
 }
 
 
-struct object *copy_object(struct object *obj) {
+inline struct object *copy_object(struct object *obj) {
     switch (obj->type) {
         case OBJ_BOOL:
         case OBJ_NULL:
