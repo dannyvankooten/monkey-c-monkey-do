@@ -1,4 +1,5 @@
-CFLAGS += -std=c11 -Wall -Werror -DDEBUG -g
+CFLAGS += -std=c99 -Wall -Werror -Wextra -DDEBUG -g
+STRICTFLAGS = -Wpedantic 
 TESTFLAGS = $(CFLAGS) -g -DDEBUG
 BINDIR := bin
 DATE=$(shell date '+%Y-%m-%d')
@@ -6,10 +7,10 @@ DATE=$(shell date '+%Y-%m-%d')
 all: monkey repl tests
 
 repl: $(BINDIR)
-	$(CC) $(CFLAGS) src/repl.c src/eval/*.c src/lexer/*.c src/parser/*.c -ledit -o $(BINDIR)/repl
+	$(CC) $(CFLAGS) $(STRICTFLAGS) src/repl.c src/eval/*.c src/lexer/*.c src/parser/*.c -ledit -o $(BINDIR)/repl
 
 monkey: 
-	$(CC) $(CFLAGS) src/monkey.c src/eval/*.c src/lexer/*.c src/parser/*.c -Ofast -march=native -DNDEBUG -o $(BINDIR)/monkey 
+	$(CC) $(CFLAGS) $(STRICTFLAGS) src/monkey.c src/eval/*.c src/lexer/*.c src/parser/*.c -Ofast -march=native -DNDEBUG -o $(BINDIR)/monkey 
 
 tests: $(BINDIR) lexer_test parser_test eval_test code_test
 

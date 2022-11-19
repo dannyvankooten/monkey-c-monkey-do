@@ -13,7 +13,7 @@ struct definition {
 
 struct instruction {
     unsigned char values[MAX_OP_SIZE];
-    int size;
+    unsigned int size;
 };
 
 struct definition lookup(enum opcode opcode) {
@@ -43,8 +43,8 @@ struct instruction make(enum opcode opcode, int ops[MAX_OP_SIZE], unsigned int o
     i.values[i.size++] = opcode;
 
     // write operands to remaining bytes
-    for (int op_idx = 0; op_idx < op_size; op_idx++) {
-        for (int byte_idx = def.operand_widths[op_idx]-1; byte_idx >= 0; byte_idx--) {
+    for (unsigned int op_idx = 0; op_idx < op_size; op_idx++) {
+        for (int byte_idx = (int) def.operand_widths[op_idx] - 1; byte_idx >= 0; byte_idx--) {
             i.values[i.size++] = ops[op_idx] >> (byte_idx * 8) & 0xff;
         }
         

@@ -6,7 +6,7 @@
 // TODO: perhaps mock this in case it's not installed, since it's not super necessary
 #include <editline/readline.h>
 
-int main(int argc, char **argv)
+int main()
 {
     puts("Monkey-C Version 0.0.1");
     puts("Press Ctrl+c to Exit\n");
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 
         if (parser.errors > 0) {
             printf("Whoops! Parsing error:\n");
-            for (int i = 0; i < parser.errors; i++) {
+            for (unsigned int i = 0; i < parser.errors; i++) {
                 printf("- %s\n", parser.error_messages[i]);
             }
 

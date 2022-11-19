@@ -31,7 +31,7 @@ struct object *eval_minus_prefix_operator_expression(struct object *right)
         return make_error_object("unknown operator: -%s", object_type_to_str(right->type));
     }
 
-    return make_integer_object(-right->integer);
+    return make_integer_object(-right->value.integer);
 }
 
 struct object *eval_prefix_expression(enum operator operator, struct object *right)
@@ -59,28 +59,28 @@ struct object *eval_integer_infix_expression(enum operator operator, struct obje
     switch (operator)
     {
     case OP_ADD:
-        return make_integer_object(left->integer + right->integer);
+        return make_integer_object(left->value.integer + right->value.integer);
         break;
     case OP_SUBTRACT:
-        return make_integer_object(left->integer - right->integer);
+        return make_integer_object(left->value.integer - right->value.integer);
         break;
     case OP_MULTIPLY:
-        return make_integer_object(left->integer * right->integer);
+        return make_integer_object(left->value.integer * right->value.integer);
         break;
     case OP_DIVIDE:
-        return make_integer_object(left->integer / right->integer);
+        return make_integer_object(left->value.integer / right->value.integer);
         break;
     case OP_LT:
-        return make_boolean_object(left->integer < right->integer);
+        return make_boolean_object(left->value.integer < right->value.integer);
         break;
     case OP_GT:
-        return make_boolean_object(left->integer > right->integer);
+        return make_boolean_object(left->value.integer > right->value.integer);
         break;
     case OP_EQ:
-        return make_boolean_object(left->integer == right->integer);
+        return make_boolean_object(left->value.integer == right->value.integer);
         break;
     case OP_NOT_EQ:
-        return make_boolean_object(left->integer != right->integer);
+        return make_boolean_object(left->value.integer != right->value.integer);
         break;
     default:
         break;
@@ -93,7 +93,7 @@ struct object *eval_string_infix_expression(enum operator operator, struct objec
 {
     switch (operator) {
         case OP_ADD: 
-            return make_string_object(left->string, right->string);
+            return make_string_object(left->value.string, right->value.string);
         break;
 
         default: 
@@ -204,7 +204,7 @@ struct object *eval_identifier(struct identifier *ident, struct environment *env
 struct object_list *eval_expression_list(struct expression_list *list, struct environment *env) {
     struct object_list *result = make_object_list(list->size);
     
-    for (int i = 0; i < list->size; i++) {
+    for (unsigned int i = 0; i < list->size; i++) {
         struct object *obj = eval_expression(list->values[i], env);
         result->values[result->size++] = obj;
 
@@ -214,7 +214,7 @@ struct object_list *eval_expression_list(struct expression_list *list, struct en
                 result->values[0] = result->values[i-1];
 
                 // free other objects in list
-                for (int j=1; j < i; j++) {
+                for (unsigned int j=1; j < i; j++) {
                     free_object(result->values[j]);
                     result->values[j] = NULL;
                 }
@@ -232,20 +232,20 @@ struct object *apply_function(struct object *obj, struct object_list *args) {
 
     switch (obj->type) {
         case OBJ_BUILTIN: {
-            return obj->builtin(args);
+            return obj->value.builtin(args);
         }
         break;
 
         case OBJ_FUNCTION: {
-            if (args->size != obj->function.parameters->size) {
-                return make_error_object("invalid function call: expected %d arguments, got %d", obj->function.parameters->size, args->size);
+            if (args->size != obj->value.function.parameters->size) {
+                return make_error_object("invalid function call: expected %d arguments, got %d", obj->value.function.parameters->size, args->size);
             }
             
-            struct environment *env = make_closed_environment(obj->function.env); 
-            for (int i=0; i < obj->function.parameters->size; i++) {
-                environment_set(env, obj->function.parameters->values[i].value, args->values[i]);
+            struct environment *env = make_closed_environment(obj->value.function.env); 
+            for (unsigned int i=0; i < obj->value.function.parameters->size; i++) {
+                environment_set(env, obj->value.function.parameters->values[i].value, args->values[i]);
             }
-            struct object *result = eval_block_statement(obj->function.body, env);
+            struct object *result = eval_block_statement(obj->value.function.body, env);
             free_environment(env);
             result->return_value = false;
             return result;
@@ -265,11 +265,11 @@ struct object *eval_index_expression(struct object *left, struct object *index) 
         return make_error_object("index operator not supported: %s", object_type_to_str(left->type));
     }
 
-    if (index->integer < 0 || index->integer > (left->array->size - 1)) {
+    if (index->value.integer < 0 || index->value.integer > (left->value.array->size - 1)) {
         return object_null;
     }
 
-    return copy_object(left->array->values[index->integer]);
+    return copy_object(left->value.array->values[index->value.integer]);
 }
 
 struct object *eval_expression(struct expression *expr, struct environment *env)
@@ -277,61 +277,61 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
     switch (expr->type)
     {
         case EXPR_INT:
-            return make_integer_object(expr->integer);
+            return make_integer_object(expr->value.integer);
             break;
         case EXPR_BOOL:
-            return make_boolean_object(expr->boolean);
+            return make_boolean_object(expr->value.boolean);
             break;
         case EXPR_STRING: 
-            return make_string_object(expr->string, NULL);
+            return make_string_object(expr->value.string, NULL);
             break;
         case EXPR_PREFIX: {
-            struct object *right = eval_expression(expr->prefix.right, env);
+            struct object *right = eval_expression(expr->value.prefix.right, env);
             if (is_object_error(right->type)) {
                 return right;
             }
-            struct object *result = eval_prefix_expression(expr->prefix.operator, right);
+            struct object *result = eval_prefix_expression(expr->value.prefix.operator, right);
             free_object(right);
             return result;
             break;
         }
         case EXPR_INFIX: {
-            struct object *left = eval_expression(expr->infix.left, env);
+            struct object *left = eval_expression(expr->value.infix.left, env);
             if (is_object_error(left->type)) {
                 return left;
             }
 
-            struct object *right = eval_expression(expr->infix.right, env);
+            struct object *right = eval_expression(expr->value.infix.right, env);
             if (is_object_error(right->type)) {
                 free_object(left);
                 return right;
             }
 
-            struct object *result = eval_infix_expression(expr->infix.operator, left, right);
+            struct object *result = eval_infix_expression(expr->value.infix.operator, left, right);
             free_object(left);
             free_object(right);
             return result;
             break;
         }
         case EXPR_IF:
-            return eval_if_expression(&expr->ifelse, env);
+            return eval_if_expression(&expr->value.ifelse, env);
             break;
         case EXPR_WHILE: 
-            return eval_while_expression(&expr->whilst, env);
+            return eval_while_expression(&expr->value.whilst, env);
         break;    
         case EXPR_IDENT: 
-            return eval_identifier(&expr->ident, env);
+            return eval_identifier(&expr->value.ident, env);
             break;
         case EXPR_FUNCTION: 
-            return make_function_object(&expr->function.parameters, expr->function.body, env);
+            return make_function_object(&expr->value.function.parameters, expr->value.function.body, env);
             break;
         case EXPR_CALL: {
-            struct object *left = eval_expression(expr->call.function, env);
+            struct object *left = eval_expression(expr->value.call.function, env);
             if (is_object_error(left->type)) {
                 return left;
             }
 
-            struct object_list *args = eval_expression_list(&(expr->call.arguments), env);
+            struct object_list *args = eval_expression_list(&(expr->value.call.arguments), env);
             if (args->size >= 1 && is_object_error(args->values[0]->type)) {
                 free_object(left);
                 return args->values[0];
@@ -345,7 +345,7 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
         }
 
         case EXPR_ARRAY: {
-            struct object_list *elements = eval_expression_list(&expr->array, env);
+            struct object_list *elements = eval_expression_list(&expr->value.array, env);
             if (elements->size >= 1 && is_object_error(elements->values[0]->type)) {
                 return elements->values[0];
             }
@@ -356,12 +356,12 @@ struct object *eval_expression(struct expression *expr, struct environment *env)
         }
 
         case EXPR_INDEX: {
-            struct object *left = eval_expression(expr->index.left, env);
+            struct object *left = eval_expression(expr->value.index.left, env);
             if (is_object_error(left->type)) {
                 return left;
             }
 
-            struct object *index = eval_expression(expr->index.index, env);
+            struct object *index = eval_expression(expr->value.index.index, env);
             if (is_object_error(index->type)) {
                 free_object(left);
                 return index;
@@ -463,7 +463,7 @@ struct object *eval_program(struct program *prog, struct environment *env)
 {
     struct object *obj = NULL;
 
-    for (int i = 0; i < prog->size; i++)
+    for (unsigned int i = 0; i < prog->size; i++)
     {
         if (obj) {
             free_object(obj);

@@ -7,18 +7,18 @@ void test_make() {
     struct {
         enum opcode opcode;
         int operands[16];
-        int op_size;
+        unsigned int op_size;
         unsigned char expected[16];
-        int instr_size;
+        unsigned int instr_size;
     } tests[] = {
         {OP_CONST, {65534}, 1, {OP_CONST, 255, 254}, 3}
     };
 
-    for (int i=0; i < ARRAY_SIZE(tests); i++) {
+    for (unsigned int i=0; i < ARRAY_SIZE(tests); i++) {
         struct instruction result = make(tests[i].opcode, tests[i].operands, tests[i].op_size);
         
         assertf(result.size == tests[i].instr_size, "wrong length: expected %d, got %d", tests[i].instr_size, result.size);
-        for (int j=0; j < tests[i].instr_size; j++) {
+        for (unsigned int j=0; j < tests[i].instr_size; j++) {
             assertf(result.values[j] == tests[i].expected[j], "[%d] invalid byte value for bit %d: expected %d, got %d", i, j, tests[i].expected[j], result.values[j]);
         }
     }

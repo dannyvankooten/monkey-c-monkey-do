@@ -119,23 +119,25 @@ struct while_expression {
     struct block_statement *body;
 };
 
+union expression_value {
+    long integer;
+    bool boolean;
+    char *string;
+    struct identifier ident;
+    struct prefix_expression prefix;
+    struct infix_expression infix;
+    struct if_expression ifelse;
+    struct function_literal function;
+    struct call_expression call;
+    struct expression_list array;
+    struct index_expression index;
+    struct while_expression whilst;
+};
+
 struct expression {
     enum expression_type type;
     struct token token;
-    union {
-        long integer;
-        bool boolean;
-        char *string;
-        struct identifier ident;
-        struct prefix_expression prefix;
-        struct infix_expression infix;
-        struct if_expression ifelse;
-        struct function_literal function;
-        struct call_expression call;
-        struct expression_list array;
-        struct index_expression index;
-        struct while_expression whilst;
-    };
+    union expression_value value;
 };
 
 struct program {

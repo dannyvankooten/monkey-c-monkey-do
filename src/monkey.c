@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     struct program *program = parse_program(&parser);
 
     if (parser.errors > 0) {
-        for (int i = 0; i < parser.errors; i++) {
+        for (unsigned int i = 0; i < parser.errors; i++) {
             puts(parser.error_messages[i]);
         }
 

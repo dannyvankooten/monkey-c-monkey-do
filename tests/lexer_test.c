@@ -119,7 +119,7 @@ int main() {
     };
 
     struct token t;
-    for (int j = 0; j < sizeof tokens / sizeof tokens[0]; j++) {
+    for (unsigned int j = 0; j < sizeof tokens / sizeof tokens[0]; j++) {
         gettoken(&l, &t);
         assertf(t.type == tokens[j].type, "[%d] wrong type: expected \"%s\", got \"%s\"\n", j, token_type_to_str(tokens[j].type), token_type_to_str(t.type));
         assertf(strcmp(t.literal, tokens[j].literal) == 0, "[%d] wrong literal: expected \"%s\", got \"%s\"\n", j, tokens[j].literal, t.literal);
