@@ -2,8 +2,8 @@
 #define OBJECT_H
 
 #include <stdbool.h>
-#include "env.h"
-#include "parser/parser.h"
+#include "./env.h"
+#include "../parser/parser.h"
 
 #define is_object_error(t) (t == OBJ_ERROR)
 #define is_object_truthy(obj) (obj != object_null && obj != object_false)

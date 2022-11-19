@@ -3,7 +3,7 @@
 #include <stdlib.h> 
 #include <stdarg.h> 
 
-#include "parser/parser.h"
+#include "../src/parser/parser.h"
 #include "test_helpers.h"
 
 union expression_value {

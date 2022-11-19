@@ -7,10 +7,10 @@
 #include <err.h>
 
 #include "builtins.h"
-#include "object.h"
-#include "eval.h"
-#include "env.h"
-#include "parser/parser.h"
+#include "./object.h"
+#include "./eval.h"
+#include "./env.h"
+#include "./../parser/parser.h"
 
 struct object *eval_expression(struct expression *expr, struct environment *env);
 struct object *eval_block_statement(struct block_statement *block, struct environment *env);

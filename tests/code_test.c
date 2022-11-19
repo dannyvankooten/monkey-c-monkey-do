@@ -1,4 +1,4 @@
-#include "code/code.c"
+#include "./../src/code/code.c"
 #include "test_helpers.h"
 
 #define ARRAY_SIZE(v) sizeof v / sizeof v[0]

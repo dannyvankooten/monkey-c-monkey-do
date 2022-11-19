@@ -1,7 +1,5 @@
-#ifndef LEXER_H
-#define LEXER_H
-
-#include "token.h"
+#pragma once
+#include "./token.h"
 
 struct lexer {
     char *input;
@@ -9,7 +7,4 @@ struct lexer {
 };
 
 int gettoken(struct lexer *l, struct token *t);
-
 extern struct lexer new_lexer(char *input);
-
-#endif

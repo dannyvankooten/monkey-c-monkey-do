@@ -4,7 +4,7 @@
 
 #define assertf(assertion, fmt, ...) _assertf(assertion, __FILE__, __LINE__, __FUNCTION__, fmt, ##__VA_ARGS__)
 
-void _assertf(int assertion, const char filename[64], const int line, const char function_name[64], char *format, ...)
+void _assertf(int assertion, const char filename[], const int line, const char function_name[], char *format, ...)
 {
     if (assertion)
     {

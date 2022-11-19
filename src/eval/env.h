@@ -1,7 +1,7 @@
 #ifndef ENV_H 
 #define ENV_H 
 
-#include "object.h"
+#include "./object.h"
 
 #define MAX_KEY_LENGTH 32
 

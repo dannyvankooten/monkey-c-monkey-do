@@ -2,9 +2,9 @@
 #define PARSER_H
 
 #include <stdbool.h>
-#include "lexer/lexer.h"
+#include "./../lexer/lexer.h"
 
-#define MAX_IDENT_LENGTH 32
+#define MAX_IDENT_LENGTH 255
 
 enum precedence {
     LOWEST = 1,
