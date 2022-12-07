@@ -1,4 +1,4 @@
-**Development of this interpreter continues here: [dannyvankooten/pepper-lang](https://github.com/dannyvankooten/pepper-lang)**
+This repository moved to https://git.sr.ht/~dvko/monkey-c-monkey-do on 2022-12-07 :warning:
 
 ---
 
